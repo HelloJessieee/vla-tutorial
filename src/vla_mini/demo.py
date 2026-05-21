@@ -11,8 +11,14 @@ import numpy as np
 import yaml
 from PIL import Image, ImageDraw
 
-from vla_mini.env.toy_reach import ToyReachEnv
-from vla_mini.repl import CodeSession, DRY_RUN_SNIPPET, DEFAULT_SNIPPET, ExecResult
+from vla_mini.env import make_env
+from vla_mini.repl import (
+    CodeSession,
+    DEFAULT_SNIPPET,
+    DRY_RUN_SNIPPET,
+    PUSH_SNIPPET,
+    ExecResult,
+)
 
 _torch = None
 _load_model = None
@@ -105,12 +111,16 @@ def build_demo(
     with config_path.open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
+    task = cfg.get("task", "reach")
     ckpt_path = Path(cfg["output_dir"]) / "action_head.pt"
-    env = ToyReachEnv()
+    env = make_env(task)
     model = None
     device = None
-    mode_label = "DRY-RUN · expert only" if dry_run else "VLA policy"
-    default_code = DRY_RUN_SNIPPET if dry_run else DEFAULT_SNIPPET
+    mode_label = f"DRY-RUN · {task} · expert only" if dry_run else f"VLA · {task}"
+    if task == "push":
+        default_code = PUSH_SNIPPET
+    else:
+        default_code = DRY_RUN_SNIPPET if dry_run else DEFAULT_SNIPPET
 
     if not dry_run:
         _ensure_train_deps()
@@ -208,7 +218,11 @@ def build_demo(
             return None, "Dry-run 模式不训练。请: npx vla-mini train --collect"
         _ensure_train_deps()
         data_dir = Path(cfg["data_dir"])
-        _collect_episodes(num_episodes=cfg.get("num_episodes", 80), out_dir=data_dir)
+        _collect_episodes(
+            num_episodes=cfg.get("num_episodes", 80),
+            out_dir=data_dir,
+            task=task,
+        )
         _train_loop(
             manifest=data_dir / "manifest.jsonl",
             data_root=data_dir,

@@ -21,6 +21,25 @@ npm 包：https://www.npmjs.com/package/@jxhs/vla-mini
 
 ---
 
+## 教学任务阶梯（仿真）
+
+| 级别 | `task` | 做什么 | 指令示例 |
+|------|--------|--------|----------|
+| **L0** | `reach`（默认） | 白点移到指定颜色圆 | `Move the white dot to the red circle.` |
+| **L1** | `push` | 推彩色方块进绿色 zone | `Push the red block into the green zone.` |
+| **L2+** | （规划） | pick / 多任务混合 | — |
+| **课外** | LIBERO / PyBullet | 真 3D 操作栈 | 见文末升级路径 |
+
+仍 **无 Bullet**、**action_dim=2**、**自动 collect + expert**。切换任务只需换配置或 `--task`：
+
+```cmd
+.\.venv\Scripts\python.exe -m vla_mini.dry_run --task push
+.\.venv\Scripts\python.exe -m vla_mini.train --config configs\push.yaml --collect
+.\.venv\Scripts\python.exe -m vla_mini.demo --config configs\push.yaml --dry-run
+```
+
+---
+
 ## 环境要求
 
 - **Python 3.12 或 3.13**
@@ -223,7 +242,10 @@ scripts\run-demo.cmd
 ```
 d:\vla\
   src/vla_mini/
-    env/toy_reach.py      # 2D 环境
+    env/toy_reach.py      # L0 reach
+    env/toy_push.py       # L1 push_block
+    env/factory.py        # make_env(task=reach|push)
+  configs/push.yaml       # L1 默认配置
     data/synthetic.py     # 合成数据
     model/vla.py          # 基础 VLA（CLIP + 动作头）
     policy/               # EduPI0Policy（π₀ 格式）
@@ -248,10 +270,11 @@ d:\vla\
 
 ## 升级路径
 
-1. 换仿真：PyBullet / LIBERO（单独环境）
-2. 换数据：接入 `lerobot/*` 或 HDF5
-3. 换大 VLM / LoRA
-4. 完整 LeRobot：`lerobot[libero]` 等
+1. **本仓库内**：`pick`、多任务混合（`make_env` / `collect_episodes` 已支持扩展）
+2. 换仿真：PyBullet / LIBERO（单独环境，课堂外）
+3. 换数据：接入 `lerobot/*` 或 HDF5
+4. 换大 VLM / LoRA
+5. 完整 LeRobot：`lerobot[libero]` 等
 
 ---
 

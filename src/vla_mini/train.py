@@ -121,6 +121,7 @@ def main() -> None:
                 collect=args.collect,
                 data_dir=Path(cfg["data_dir"]),
                 collect_episodes_count=min(cfg.get("num_episodes", 10), 10),
+                task=cfg.get("task", "reach"),
             )
         )
 
@@ -134,6 +135,7 @@ def main() -> None:
             num_episodes=cfg.get("num_episodes", 200),
             seed=cfg.get("seed", 0),
             out_dir=data_dir,
+            task=cfg.get("task", "reach"),
         )
 
     train_loop(

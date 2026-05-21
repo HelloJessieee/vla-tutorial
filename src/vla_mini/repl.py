@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
-from vla_mini.env.toy_reach import ToyReachEnv
+from vla_mini.env.base import ToyEnv
 
 
 class UnsafeCodeError(ValueError):
@@ -135,7 +135,7 @@ def _safe_builtins() -> dict[str, Any]:
 
 @dataclass
 class CodeSession:
-    env: ToyReachEnv
+    env: ToyEnv
     predict_fn: Any | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -212,6 +212,14 @@ class CodeSession:
 
 
 DEFAULT_SNIPPET = """# 可用: env, np, Image, predict(可选), obs, instruction, action, result
+obs, instruction = env.reset()
+action = env.expert_action()
+result = env.step(action)
+print("instruction:", instruction)
+print("info:", result.info)
+"""
+
+PUSH_SNIPPET = """# L1 push_block — 推彩色方块进绿色 zone
 obs, instruction = env.reset()
 action = env.expert_action()
 result = env.step(action)

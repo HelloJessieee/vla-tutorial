@@ -73,7 +73,11 @@ def main() -> None:
 
     data_dir = Path(cfg["data_dir"])
     if args.collect or not (data_dir / "manifest.jsonl").exists():
-        collect_episodes(num_episodes=cfg.get("num_episodes", 120), out_dir=data_dir)
+        collect_episodes(
+            num_episodes=cfg.get("num_episodes", 120),
+            out_dir=data_dir,
+            task=cfg.get("task", "reach"),
+        )
 
     device = cfg.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
     policy = EduPI0Policy(pi0_cfg).to(device)

@@ -1,4 +1,5 @@
 # Educational π₀-style policy (LeRobot batch format, no lerobot install)
+task: reach
 data_dir: data/synthetic
 output_dir: runs/edu_pi0
 

@@ -1,4 +1,4 @@
-"""L0 smoke test: env + expert only — no torch, no VLM download."""
+"""L0/L1 smoke test: env + expert only — no torch, no VLM download."""
 
 from __future__ import annotations
 
@@ -7,17 +7,23 @@ import sys
 from pathlib import Path
 
 from vla_mini.data.synthetic import collect_episodes, load_manifest
-from vla_mini.env.toy_reach import ToyReachEnv
+from vla_mini.env import make_env
 
 
-def expert_rollout(episodes: int = 30, seed: int = 0, max_steps: int | None = None) -> dict:
-    env = ToyReachEnv()
-    if max_steps is not None:
-        env.max_steps = max_steps
+def expert_rollout(
+    episodes: int = 30,
+    seed: int = 0,
+    max_steps: int | None = None,
+    task: str = "reach",
+) -> dict:
     successes = 0
     total_steps = 0
+    instruction = ""
     for ep in range(episodes):
-        obs, instruction = env.reset(seed=seed + ep)
+        env = make_env(task, seed=seed + ep)
+        if max_steps is not None:
+            env.max_steps = max_steps
+        obs, instruction = env.reset()
         done = False
         steps = 0
         while not done:
@@ -38,6 +44,7 @@ def expert_rollout(episodes: int = 30, seed: int = 0, max_steps: int | None = No
         "avg_steps": total_steps / max(episodes, 1),
         "sample_instruction": instruction,
         "observation_shape": tuple(obs.shape),
+        "task": task,
     }
 
 
@@ -64,18 +71,19 @@ def run(
     collect: bool = False,
     data_dir: Path | str = "data/synthetic",
     collect_episodes_count: int = 10,
+    task: str = "reach",
 ) -> int:
-    print("== vla-mini dry-run (no VLM, no GPU) ==\n")
+    print(f"== vla-mini dry-run (task={task}, no VLM, no GPU) ==\n")
 
-    print("[1/3] ToyReachEnv reset + render ...")
-    env = ToyReachEnv(seed=seed)
+    print(f"[1/3] {task} env reset + render ...")
+    env = make_env(task, seed=seed)
     obs, instruction = env.reset()
     assert obs.shape == (env.size, env.size, 3), f"unexpected shape: {obs.shape}"
     print(f"  OK  observation {obs.shape}, dtype={obs.dtype}")
     print(f"  OK  instruction: {instruction!r}")
 
     print(f"\n[2/3] Expert policy rollout ({episodes} episodes) ...")
-    stats = expert_rollout(episodes=episodes, seed=seed)
+    stats = expert_rollout(episodes=episodes, seed=seed, task=task)
     print(
         f"  OK  success_rate={stats['success_rate']:.1%} "
         f"({stats['successes']}/{stats['episodes']}), "
@@ -91,6 +99,7 @@ def run(
             num_episodes=collect_episodes_count,
             seed=seed,
             out_dir=out,
+            task=task,
         )
         meta = verify_manifest(manifest, out)
         print(f"  OK  {meta['manifest_rows']} rows, verified {meta['samples_verified']} samples")
@@ -109,6 +118,7 @@ def main() -> None:
     )
     parser.add_argument("--episodes", type=int, default=30)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--task", choices=("reach", "push"), default="reach")
     parser.add_argument(
         "--collect",
         action="store_true",
@@ -124,6 +134,7 @@ def main() -> None:
             collect=args.collect,
             data_dir=args.data_dir,
             collect_episodes_count=args.collect_episodes,
+            task=args.task,
         )
     except Exception as exc:
         print(f"\n== dry-run FAILED ==\n{exc}", file=sys.stderr)

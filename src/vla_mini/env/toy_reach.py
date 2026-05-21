@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
 import numpy as np
 from PIL import Image, ImageDraw
+
+from vla_mini.env.base import StepResult
 
 COLOR_NAMES = ("red", "green", "blue")
 COLOR_RGB = {
@@ -15,18 +16,10 @@ COLOR_RGB = {
 }
 
 
-@dataclass
-class StepResult:
-    observation: np.ndarray
-    instruction: str
-    action: np.ndarray
-    reward: float
-    done: bool
-    info: dict
-
-
 class ToyReachEnv:
-    """Agent moves a dot toward a colored target; language names the target color."""
+    """L0 reach: agent moves a dot toward a colored target; language names the target color."""
+
+    task_name = "reach"
 
     def __init__(
         self,
@@ -82,7 +75,12 @@ class ToyReachEnv:
             action=action,
             reward=reward,
             done=done,
-            info={"distance": dist, "success": success, "target_color": self.target_color},
+            info={
+                "distance": dist,
+                "success": success,
+                "target_color": self.target_color,
+                "task": self.task_name,
+            },
         )
 
     def expert_action(self) -> np.ndarray:

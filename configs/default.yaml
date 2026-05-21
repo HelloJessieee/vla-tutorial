@@ -1,4 +1,6 @@
 # Minimal defaults — tuned for laptop / 8GB GPU
+# task: reach (L0) | push (L1 push_block) — see configs/push.yaml
+task: reach
 data_dir: data/synthetic
 output_dir: runs/default
 num_episodes: 120

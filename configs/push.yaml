@@ -1,0 +1,14 @@
+# L1 push_block — same stack as default.yaml, different task + paths
+task: push
+data_dir: data/synthetic_push
+output_dir: runs/push
+num_episodes: 120
+seed: 0
+epochs: 3
+batch_size: 4
+lr: 0.001
+eval_episodes: 50
+eval_seed: 100
+dry_run_episodes: 30
+device: null
+vlm_backbone: clip

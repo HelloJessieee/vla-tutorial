@@ -9,7 +9,7 @@ import torch
 import yaml
 from PIL import Image
 
-from vla_mini.env.toy_reach import ToyReachEnv
+from vla_mini.env import make_env
 from vla_mini.model.vla import MiniVLA, VLAConfig
 
 
@@ -27,13 +27,14 @@ def evaluate(
     episodes: int = 50,
     seed: int = 100,
     device: str | None = None,
+    task: str = "reach",
 ) -> dict:
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model(ckpt_path, device)
-    env = ToyReachEnv()
     successes = 0
     for ep in range(episodes):
-        obs, instruction = env.reset(seed=seed + ep)
+        env = make_env(task, seed=seed + ep)
+        obs, instruction = env.reset()
         done = False
         while not done:
             action = model.predict(Image.fromarray(obs), instruction).numpy()
@@ -67,6 +68,7 @@ def main() -> None:
         stats = expert_rollout(
             episodes=cfg.get("eval_episodes", 50),
             seed=cfg.get("eval_seed", 100),
+            task=cfg.get("task", "reach"),
         )
         print(
             f"[dry-run expert] success_rate={stats['success_rate']:.1%} "
@@ -80,6 +82,7 @@ def main() -> None:
         episodes=cfg.get("eval_episodes", 50),
         seed=cfg.get("eval_seed", 100),
         device=cfg.get("device"),
+        task=cfg.get("task", "reach"),
     )
 
 
