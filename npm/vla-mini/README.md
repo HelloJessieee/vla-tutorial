@@ -1,6 +1,6 @@
 # vla-mini (npm)
 
-Node 封装层：自动检测 Python 3.12/3.13、创建 `~/.vla-mini/venv`、安装 [vla-mini](https://github.com/) Python 包并启动 Demo。
+Node 封装层：自动检测 Python 3.12/3.13、创建 `~/.vla-mini/venv`、安装 [vla-tutorial](https://github.com/HelloJessieee/vla-tutorial) Python 包并启动 Demo。
 
 ## 安装
 

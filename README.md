@@ -1,5 +1,7 @@
 # vla-mini
 
+仓库：<https://github.com/HelloJessieee/vla-tutorial>
+
 面向教学的**最小 VLA 工作台**：2D 仿真 + 自动生成数据 + 网页 Demo + 可选训练（CLIP 小模型 + 动作头）。  
 **不依赖 LeRobot / MuJoCo 安装**；可选 **Edu-π₀** 对齐 [LeRobot π₀ policy 格式](https://github.com/huggingface/lerobot/tree/main/src/lerobot/policies/pi0)。
 
