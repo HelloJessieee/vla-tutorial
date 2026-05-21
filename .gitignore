@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+data/
+runs/
+*.pt
+.ruff_cache/
+.gradio/
+npm/vla-mini/vendor/
+npm/vla-mini/node_modules/

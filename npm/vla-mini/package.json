@@ -1,0 +1,29 @@
+{
+  "name": "@jxhs/vla-mini",
+  "version": "0.1.1",
+  "description": "Teaching VLA workbench — npm wrapper installs Python backend and launches demo",
+  "license": "Apache-2.0",
+  "bin": {
+    "vla-mini": "bin/vla-mini.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "vendor",
+    "scripts"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "prepack": "node scripts/bundle-python.js",
+    "bundle": "node scripts/bundle-python.js"
+  },
+  "keywords": [
+    "vla",
+    "robotics",
+    "lerobot",
+    "vision-language-action",
+    "education"
+  ]
+}

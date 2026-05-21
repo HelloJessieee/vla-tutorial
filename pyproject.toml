@@ -1,0 +1,40 @@
+[project]
+name = "vla-mini"
+version = "0.1.0"
+description = "Minimal teaching VLA: frozen small VLM + action head on a 2D reach env"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "Apache-2.0" }
+authors = [{ name = "VLA Mini" }]
+dependencies = [
+  "torch>=2.2.0",
+  "transformers>=4.45.0",
+  "accelerate>=0.34.0",
+  "pillow>=10.0.0",
+  "numpy>=1.26.0",
+  "matplotlib>=3.8.0",
+  "tqdm>=4.66.0",
+  "pyyaml>=6.0.0",
+  "gradio>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.6.0"]
+
+[project.scripts]
+vla-train = "vla_mini.train:main"
+vla-eval = "vla_mini.eval:main"
+vla-demo = "vla_mini.demo:main"
+vla-dry-run = "vla_mini.dry_run:main"
+vla-train-pi0 = "vla_mini.train_pi0:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vla_mini"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

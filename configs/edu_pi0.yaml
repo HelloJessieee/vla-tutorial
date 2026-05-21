@@ -1,0 +1,19 @@
+# Educational π₀-style policy (LeRobot batch format, no lerobot install)
+data_dir: data/synthetic
+output_dir: runs/edu_pi0
+
+vlm_backbone: clip             # clip (default) | smolvlm | minimind2-small-v
+# vlm_pretrained: HuggingFaceTB/SmolVLM-256M-Instruct
+
+chunk_size: 1
+action_dim: 2
+max_action_dim: 8
+max_state_dim: 8
+image_resolution: [128, 128]
+freeze_vlm: true
+
+num_episodes: 120
+epochs: 3
+batch_size: 4
+lr: 0.001
+device: null
