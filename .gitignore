@@ -3,7 +3,7 @@ __pycache__/
 .venv/
 venv/
 .env
-data/
+/data/
 runs/
 *.pt
 .ruff_cache/
