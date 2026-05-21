@@ -23,19 +23,25 @@ npm 包：https://www.npmjs.com/package/@jxhs/vla-mini
 
 ## 教学任务阶梯（仿真）
 
-| 级别 | `task` | 做什么 | 指令示例 |
-|------|--------|--------|----------|
-| **L0** | `reach`（默认） | 白点移到指定颜色圆 | `Move the white dot to the red circle.` |
-| **L1** | `push` | 推彩色方块进绿色 zone | `Push the red block into the green zone.` |
-| **L2+** | （规划） | pick / 多任务混合 | — |
-| **课外** | LIBERO / PyBullet | 真 3D 操作栈 | 见文末升级路径 |
+同一套 **train / eval / demo / collect**；只改 `task` 与输出维度。
 
-仍 **无 Bullet**、**action_dim=2**、**自动 collect + expert**。切换任务只需换配置或 `--task`：
+| 级别 | `task` | 看图+指令 → 输出 | `output_dim` | 配置 |
+|------|--------|------------------|--------------|------|
+| **L0** | `reach` | 单步靠近 `(dx, dy)` | 2 | `configs/default.yaml` |
+| **L1** | `push` | **push_t** 连续推动 `K×(dx,dy)`，默认 K=4 | 8 | `configs/push.yaml` |
+| **L2** | `grasp` | `(dx, dy, gripper)`，夹爪 ∈ [-1,1] | 3 | `configs/grasp.yaml` |
+| **课外** | LIBERO 等 | 3D / 真机 | — | 见升级路径 |
+
+仍 **无 Bullet**、**自动 collect + expert**。切换示例：
 
 ```cmd
+.\.venv\Scripts\python.exe -m vla_mini.dry_run --task reach
 .\.venv\Scripts\python.exe -m vla_mini.dry_run --task push
+.\.venv\Scripts\python.exe -m vla_mini.dry_run --task grasp
+
 .\.venv\Scripts\python.exe -m vla_mini.train --config configs\push.yaml --collect
-.\.venv\Scripts\python.exe -m vla_mini.demo --config configs\push.yaml --dry-run
+.\.venv\Scripts\python.exe -m vla_mini.train --config configs\grasp.yaml --collect
+.\.venv\Scripts\python.exe -m vla_mini.demo --config configs\grasp.yaml --dry-run
 ```
 
 ---
@@ -243,9 +249,12 @@ scripts\run-demo.cmd
 d:\vla\
   src/vla_mini/
     env/toy_reach.py      # L0 reach
-    env/toy_push.py       # L1 push_block
-    env/factory.py        # make_env(task=reach|push)
-  configs/push.yaml       # L1 默认配置
+    env/toy_push.py       # L1 push_t
+    env/toy_grasp.py      # L2 grasp (+ gripper dim)
+    env/factory.py        # make_env(task=reach|push|grasp)
+    env/tasks.py          # action_dim × action_chunk 规格
+  configs/push.yaml
+  configs/grasp.yaml
     data/synthetic.py     # 合成数据
     model/vla.py          # 基础 VLA（CLIP + 动作头）
     policy/               # EduPI0Policy（π₀ 格式）

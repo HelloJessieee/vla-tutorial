@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from vla_mini.data.synthetic import collect_episodes, load_manifest
+from vla_mini.env.tasks import get_task_spec
 from vla_mini.policy.batch import obs_to_batch
 from vla_mini.policy.configuration import EduPI0Config
 from vla_mini.policy.modeling_edu_pi0 import EduPI0Policy
@@ -60,11 +61,13 @@ def main() -> None:
     with args.config.open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
+    task = cfg.get("task", "reach")
+    spec = get_task_spec(task)
     pi0_cfg = EduPI0Config(
         vlm_backbone=cfg.get("vlm_backbone", "smolvlm"),
         vlm_pretrained=cfg.get("vlm_pretrained"),
-        chunk_size=cfg.get("chunk_size", 1),
-        action_dim=cfg.get("action_dim", 2),
+        chunk_size=cfg.get("chunk_size", spec.action_chunk),
+        action_dim=cfg.get("action_dim", spec.action_dim),
         max_action_dim=cfg.get("max_action_dim", 8),
         max_state_dim=cfg.get("max_state_dim", 8),
         freeze_vlm=cfg.get("freeze_vlm", True),

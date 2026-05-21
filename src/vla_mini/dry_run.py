@@ -7,7 +7,9 @@ import sys
 from pathlib import Path
 
 from vla_mini.data.synthetic import collect_episodes, load_manifest
-from vla_mini.env import make_env
+from vla_mini.env import get_task_spec, make_env
+from vla_mini.env.action_utils import expert_action_chunk
+from vla_mini.model.action_exec import policy_vector_to_steps
 
 
 def expert_rollout(
@@ -26,14 +28,24 @@ def expert_rollout(
         obs, instruction = env.reset()
         done = False
         steps = 0
+        spec = get_task_spec(task)
         while not done:
-            action = env.expert_action()
-            result = env.step(action)
-            obs = result.observation
-            done = result.done
-            steps += 1
-            if result.info.get("success"):
-                successes += 1
+            if spec.action_chunk > 1:
+                flat = expert_action_chunk(env, spec.action_chunk)
+                step_actions = policy_vector_to_steps(flat, spec)
+            else:
+                step_actions = [env.expert_action()]
+            for action in step_actions:
+                result = env.step(action)
+                obs = result.observation
+                done = result.done
+                steps += 1
+                if result.info.get("success"):
+                    successes += 1
+                    break
+                if done:
+                    break
+            if done or result.info.get("success"):
                 break
         total_steps += steps
     rate = successes / max(episodes, 1)
@@ -57,8 +69,14 @@ def verify_manifest(manifest: Path, data_root: Path, sample_rows: int = 5) -> di
         img_path = data_root / row["image"]
         if not img_path.is_file():
             raise FileNotFoundError(f"missing image: {img_path}")
-        if "action" not in row or len(row["action"]) != 2:
-            raise ValueError(f"bad action in row: {row}")
+        if "action" not in row:
+            raise ValueError(f"missing action in row: {row}")
+        task_key = row.get("task", "reach")
+        expected = get_task_spec(task_key).output_dim
+        if row.get("action_dim") and row.get("action_chunk"):
+            expected = int(row["action_dim"]) * int(row["action_chunk"])
+        if len(row["action"]) != expected:
+            raise ValueError(f"bad action len {len(row['action'])} != {expected} in row")
         if not row.get("instruction"):
             raise ValueError(f"missing instruction in row: {row}")
         checked += 1
@@ -118,7 +136,7 @@ def main() -> None:
     )
     parser.add_argument("--episodes", type=int, default=30)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--task", choices=("reach", "push"), default="reach")
+    parser.add_argument("--task", choices=("reach", "push", "grasp"), default="reach")
     parser.add_argument(
         "--collect",
         action="store_true",

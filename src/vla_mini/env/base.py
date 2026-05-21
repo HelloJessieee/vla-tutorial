@@ -23,6 +23,7 @@ class ToyEnv(Protocol):
 
     size: int
     max_steps: int
+    action_dim: int
 
     def reset(self, seed: int | None = None) -> tuple[np.ndarray, str]: ...
 

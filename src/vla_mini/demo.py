@@ -11,11 +11,13 @@ import numpy as np
 import yaml
 from PIL import Image, ImageDraw
 
-from vla_mini.env import make_env
+from vla_mini.env import get_task_spec, make_env
+from vla_mini.model.action_exec import policy_vector_to_steps
 from vla_mini.repl import (
     CodeSession,
     DEFAULT_SNIPPET,
     DRY_RUN_SNIPPET,
+    GRASP_SNIPPET,
     PUSH_SNIPPET,
     ExecResult,
 )
@@ -24,21 +26,23 @@ _torch = None
 _load_model = None
 _train_loop = None
 _collect_episodes = None
+_vla_config_from_yaml = None
 
 
 def _ensure_train_deps():
-    global _torch, _load_model, _train_loop, _collect_episodes
+    global _torch, _load_model, _train_loop, _collect_episodes, _vla_config_from_yaml
     if _torch is None:
         import torch
 
         from vla_mini.data.synthetic import collect_episodes
         from vla_mini.eval import load_model
-        from vla_mini.train import train_loop
+        from vla_mini.train import train_loop, vla_config_from_yaml
 
         _torch = torch
         _load_model = load_model
         _train_loop = train_loop
         _collect_episodes = collect_episodes
+        globals()["_vla_config_from_yaml"] = vla_config_from_yaml
 
 
 DEMO_CSS = """
@@ -112,15 +116,16 @@ def build_demo(
         cfg = yaml.safe_load(f)
 
     task = cfg.get("task", "reach")
+    spec = get_task_spec(task)
     ckpt_path = Path(cfg["output_dir"]) / "action_head.pt"
     env = make_env(task)
     model = None
     device = None
-    mode_label = f"DRY-RUN · {task} · expert only" if dry_run else f"VLA · {task}"
-    if task == "push":
-        default_code = PUSH_SNIPPET
-    else:
-        default_code = DRY_RUN_SNIPPET if dry_run else DEFAULT_SNIPPET
+    mode_label = f"DRY-RUN · {spec.level} {task} · expert" if dry_run else f"VLA · {spec.level} {task}"
+    snippets = {"reach": DEFAULT_SNIPPET, "push": PUSH_SNIPPET, "grasp": GRASP_SNIPPET}
+    default_code = snippets.get(task, DEFAULT_SNIPPET)
+    if dry_run and task == "reach":
+        default_code = DRY_RUN_SNIPPET
 
     if not dry_run:
         _ensure_train_deps()
@@ -188,22 +193,37 @@ def build_demo(
 
     def predict_step(image: np.ndarray, instruction: str, code: str):
         pil = Image.fromarray(image.astype(np.uint8))
+        obs = np.array(pil)
         if dry_run or not ckpt_path.exists():
-            action = env.expert_action()
+            vector = env.expert_action()
+            if spec.action_chunk > 1:
+                from vla_mini.env.action_utils import expert_action_chunk
+
+                vector = expert_action_chunk(env, spec.action_chunk)
             label = "expert"
         else:
             ensure_model()
             if model is None:
-                action = env.expert_action()
+                vector = env.expert_action()
                 label = "expert (no checkpoint)"
             else:
-                action = model.predict(pil, instruction).numpy()
+                vector = model.predict(pil, instruction).numpy()
                 label = "policy"
-        overlay = _draw_action_arrow(pil, action)
-        result = env.step(action)
+        steps = policy_vector_to_steps(vector, spec)
+        result = None
+        for action in steps:
+            overlay = _draw_action_arrow(Image.fromarray(obs.astype(np.uint8)), action)
+            result = env.step(action)
+            obs = result.observation
+            if result.done:
+                break
+        action = steps[0]
+        extra = ""
+        if spec.action_dim == 3 and len(action) > 2:
+            extra = f" grip={action[2]:.2f}"
         log = (
-            f"[{label} 单步] action=[{action[0]:.3f}, {action[1]:.3f}]  "
-            f"dist={result.info['distance']:.4f}  success={result.info['success']}"
+            f"[{label} 单步×{len(steps)}] a0=[{action[0]:.3f}, {action[1]:.3f}]{extra}  "
+            f"dist={result.info.get('distance', 0):.4f}  success={result.info['success']}"
         )
         return (
             np.array(result.observation),
@@ -227,11 +247,11 @@ def build_demo(
             manifest=data_dir / "manifest.jsonl",
             data_root=data_dir,
             output_dir=Path(cfg["output_dir"]),
+            model_cfg=_vla_config_from_yaml(cfg),
             epochs=cfg.get("epochs", 2),
             batch_size=cfg.get("batch_size", 4),
             lr=cfg.get("lr", 1e-3),
             device=device,
-            vlm_name=cfg.get("vlm_name"),
         )
         nonlocal model
         model = _load_model(ckpt_path, device)

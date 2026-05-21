@@ -193,7 +193,8 @@ class CodeSession:
 
         action = ns.get("action")
         if action is not None:
-            action = np.asarray(action, dtype=np.float32).reshape(-1)[:2]
+            adim = getattr(self.env, "action_dim", 2)
+            action = np.asarray(action, dtype=np.float32).reshape(-1)[:adim]
 
         overlay_base = None
         if isinstance(obs, np.ndarray):
@@ -219,7 +220,15 @@ print("instruction:", instruction)
 print("info:", result.info)
 """
 
-PUSH_SNIPPET = """# L1 push_block — 推彩色方块进绿色 zone
+PUSH_SNIPPET = """# L1 push_t — 输出为连续推动 chunk（训练时 K 步）；单步演示用 expert 第一步
+obs, instruction = env.reset()
+action = env.expert_action()
+result = env.step(action)
+print("instruction:", instruction)
+print("info:", result.info)
+"""
+
+GRASP_SNIPPET = """# L2 grasp — action = [dx, dy, gripper]，gripper>0 闭合、<0 张开
 obs, instruction = env.reset()
 action = env.expert_action()
 result = env.step(action)

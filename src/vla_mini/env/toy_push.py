@@ -18,9 +18,10 @@ PUSHER_OFFSET = 0.11
 
 
 class ToyPushEnv:
-    """Pusher (white dot) couples to a colored block; goal is block center inside green zone."""
+    """L1 push: pusher couples to block; goal is block in zone. Training uses push_t action chunks."""
 
     task_name = "push"
+    action_dim = 2
 
     def __init__(
         self,
@@ -71,13 +72,29 @@ class ToyPushEnv:
         delta = self.zone_center - self.block
         return float(np.linalg.norm(delta))
 
-    def step(self, action: np.ndarray) -> StepResult:
-        action = np.clip(np.asarray(action, dtype=np.float32).reshape(2), -1.0, 1.0)
+    def snapshot_state(self) -> tuple:
+        return (
+            self.pusher.copy(),
+            self.block.copy(),
+            self.zone_center.copy(),
+            self.block_color,
+            self.step_count,
+        )
+
+    def restore_state(self, snap: tuple) -> None:
+        self.pusher, self.block, self.zone_center, self.block_color, self.step_count = snap
+
+    def apply_action(self, action: np.ndarray) -> None:
+        action = np.clip(np.asarray(action, dtype=np.float32).reshape(-1)[:2], -1.0, 1.0)
         delta = action * self.action_scale
         self.pusher = np.clip(self.pusher + delta, 0.02, 0.98)
         if float(np.linalg.norm(self.pusher - self.block)) < CONTACT_DIST:
             self.block = np.clip(self.block + delta * 1.05, 0.05, 0.95)
         self.step_count += 1
+
+    def step(self, action: np.ndarray) -> StepResult:
+        action = np.clip(np.asarray(action, dtype=np.float32).reshape(-1)[:2], -1.0, 1.0)
+        self.apply_action(action)
         dist = self._distance_to_zone()
         success = self._block_in_zone()
         done = success or self.step_count >= self.max_steps

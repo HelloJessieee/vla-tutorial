@@ -18,12 +18,18 @@ class VLAConfig:
     vlm_backbone: str = "clip"  # clip | smolvlm
     vlm_name: str | None = None
     action_dim: int = 2
+    action_chunk: int = 1
     hidden_size: int = 256
     freeze_vlm: bool = True
+    task: str = "reach"
+
+    @property
+    def output_dim(self) -> int:
+        return self.action_dim * self.action_chunk
 
 
 class MiniVLA(nn.Module):
-    """Maps (RGB image, text instruction) -> continuous action in [-1, 1]."""
+    """Maps (RGB image, text instruction) -> flat action in [-1, 1] (dim = action_dim * action_chunk)."""
 
     def __init__(self, config: VLAConfig | None = None) -> None:
         super().__init__()
@@ -36,10 +42,11 @@ class MiniVLA(nn.Module):
             model_id or "",
             freeze=self.config.freeze_vlm,
         )
+        out_dim = self.config.output_dim
         self.action_head = nn.Sequential(
             nn.Linear(self.encoder.hidden_size, self.config.hidden_size),
             nn.GELU(),
-            nn.Linear(self.config.hidden_size, self.config.action_dim),
+            nn.Linear(self.config.hidden_size, out_dim),
             nn.Tanh(),
         )
 

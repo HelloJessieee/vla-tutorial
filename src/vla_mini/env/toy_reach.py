@@ -20,6 +20,7 @@ class ToyReachEnv:
     """L0 reach: agent moves a dot toward a colored target; language names the target color."""
 
     task_name = "reach"
+    action_dim = 2
 
     def __init__(
         self,
@@ -59,10 +60,24 @@ class ToyReachEnv:
     def instruction(self) -> str:
         return f"Move the white dot to the {self.target_color} circle."
 
-    def step(self, action: np.ndarray) -> StepResult:
-        action = np.clip(np.asarray(action, dtype=np.float32).reshape(2), -1.0, 1.0)
+    def snapshot_state(self) -> tuple:
+        return (
+            self.agent.copy(),
+            dict(self.targets),
+            self.target_color,
+            self.step_count,
+        )
+
+    def restore_state(self, snap: tuple) -> None:
+        self.agent, self.targets, self.target_color, self.step_count = snap
+
+    def apply_action(self, action: np.ndarray) -> None:
+        action = np.clip(np.asarray(action, dtype=np.float32).reshape(-1)[:2], -1.0, 1.0)
         self.agent = np.clip(self.agent + action * self.action_scale, 0.02, 0.98)
         self.step_count += 1
+
+    def step(self, action: np.ndarray) -> StepResult:
+        self.apply_action(action)
         target = self.targets[self.target_color]
         dist = float(np.linalg.norm(self.agent - target))
         reward = -dist

@@ -10,8 +10,10 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
+from vla_mini.env.action_utils import expert_action_chunk
 from vla_mini.env.base import ToyEnv
 from vla_mini.env.factory import make_env
+from vla_mini.env.tasks import get_task_spec
 
 
 def collect_episodes(
@@ -21,8 +23,11 @@ def collect_episodes(
     task: str = "reach",
     env: ToyEnv | None = None,
     env_factory: Callable[[int], ToyEnv] | None = None,
+    action_chunk: int | None = None,
 ) -> Path:
-    """Roll out expert demos. Pass ``env`` for a single instance, or ``task`` / ``env_factory`` per episode."""
+    """Roll out expert demos. Action vector length = action_dim * action_chunk (push_t for L1)."""
+    spec = get_task_spec(task)
+    chunk = action_chunk if action_chunk is not None else spec.action_chunk
     out = Path(out_dir)
     images_dir = out / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
@@ -40,7 +45,10 @@ def collect_episodes(
         obs, instruction = episode_env.reset()
         step_idx = 0
         while True:
-            action = episode_env.expert_action()
+            if chunk > 1:
+                action = expert_action_chunk(episode_env, chunk)
+            else:
+                action = episode_env.expert_action().astype(np.float32)
             img_path = images_dir / f"ep{ep:04d}_s{step_idx:03d}.png"
             Image.fromarray(obs).save(img_path)
             records.append(
@@ -51,9 +59,12 @@ def collect_episodes(
                     "episode": ep,
                     "step": step_idx,
                     "task": getattr(episode_env, "task_name", task),
+                    "action_dim": spec.action_dim,
+                    "action_chunk": chunk,
                 }
             )
-            result = episode_env.step(action)
+            step_action = action.reshape(chunk, spec.action_dim)[0]
+            result = episode_env.step(step_action)
             obs = result.observation
             step_idx += 1
             if result.done:
