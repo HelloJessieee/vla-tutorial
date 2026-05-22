@@ -1,6 +1,6 @@
 {
   "name": "@jxhs/vla-mini",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Teaching VLA workbench — npm wrapper installs Python backend and launches demo",
   "license": "Apache-2.0",
   "bin": {

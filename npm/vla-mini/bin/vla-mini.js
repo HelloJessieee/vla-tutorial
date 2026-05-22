@@ -23,10 +23,13 @@ vla-mini — 教学用最小 VLA 工作台（npm 封装 Python 后端）
 用法:
   npx vla-mini demo [--dry-run] [--share]   启动 Gradio（左侧可编辑并执行代码）
   npx vla-mini dry-run [--collect]          无 VLM 下载的秒级验收
-  npx vla-mini train [--collect] [--dry-run]
+  npx vla-mini train [--collect] [--config configs/push.yaml]
   npx vla-mini train-pi0 [--collect]        Edu-π₀（LeRobot 风格）
-  npx vla-mini eval [--dry-run]
+  npx vla-mini eval [--config configs/grasp.yaml]
+  npx vla-mini dry-run --task push|grasp
   npx vla-mini install                      仅安装/更新 Python 虚拟环境
+
+教学任务: L0 reach (default) | L1 push (push_t) | L2 grasp (+gripper)
 
 环境变量:
   VLA_MINI_HOME   虚拟环境与缓存目录（默认 ~/.vla-mini）

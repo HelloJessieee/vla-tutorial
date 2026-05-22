@@ -186,7 +186,7 @@ cd /d d:\vla
 
 ## 五、用 npm / npx（给别人一键装）
 
-发布包：`@jxhs/vla-mini`（npm ≥0.1.1 含 `train-pi0` 子命令）。
+发布包：`@jxhs/vla-mini`（npm **0.1.2+**：L0/L1/L2 任务 + `train-pi0`）。
 
 ```bash
 # 全局安装（推荐，不用每次 npx）

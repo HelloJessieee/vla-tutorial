@@ -20,11 +20,15 @@ npm install -g ../../npm/vla-mini
 npm install -g @jxhs/vla-mini
 vla-mini install
 vla-mini demo --dry-run
-vla-mini dry-run --collect
-vla-mini train --collect
+vla-mini dry-run --task reach
+vla-mini dry-run --task push
+vla-mini train --config configs/push.yaml --collect
+vla-mini train --config configs/grasp.yaml --collect
 vla-mini train-pi0 --collect
-vla-mini demo
+vla-mini demo --config configs/push.yaml --dry-run
 ```
+
+npm 0.1.2+: L0 reach / L1 push_t (8-dim chunk) / L2 grasp (3-dim gripper).
 
 https://www.npmjs.com/package/@jxhs/vla-mini
 
