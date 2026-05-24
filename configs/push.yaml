@@ -4,9 +4,9 @@ action_dim: 2
 action_chunk: 4
 data_dir: data/synthetic_push
 output_dir: runs/push
-num_episodes: 120
+num_episodes: 300
 seed: 0
-epochs: 3
+epochs: 5
 batch_size: 4
 lr: 0.001
 eval_episodes: 50

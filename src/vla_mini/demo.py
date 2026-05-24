@@ -12,6 +12,8 @@ import yaml
 from PIL import Image, ImageDraw
 
 from vla_mini.env import get_task_spec, make_env
+from vla_mini.model.checkpoint import CheckpointMismatchError, print_task_banner, validate_checkpoint
+from vla_mini.train import vla_config_from_yaml
 from vla_mini.model.action_exec import policy_vector_to_steps
 from vla_mini.repl import (
     CodeSession,
@@ -116,8 +118,16 @@ def build_demo(
         cfg = yaml.safe_load(f)
 
     task = cfg.get("task", "reach")
+    model_cfg = vla_config_from_yaml(cfg)
     spec = get_task_spec(task)
     ckpt_path = Path(cfg["output_dir"]) / "action_head.pt"
+    print_task_banner(
+        model_cfg,
+        data_dir=cfg["data_dir"],
+        output_dir=cfg["output_dir"],
+        config_path=config_path,
+        ckpt_path=ckpt_path if ckpt_path.exists() else None,
+    )
     env = make_env(task)
     model = None
     device = None
@@ -139,6 +149,10 @@ def build_demo(
             return
         _ensure_train_deps()
         if ckpt_path.exists():
+            try:
+                validate_checkpoint(ckpt_path, model_cfg)
+            except CheckpointMismatchError as exc:
+                raise RuntimeError(str(exc)) from exc
             model = _load_model(ckpt_path, device)
 
     def make_predict_fn():

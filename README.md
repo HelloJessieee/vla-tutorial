@@ -32,17 +32,30 @@ npm 包：https://www.npmjs.com/package/@jxhs/vla-mini
 | **L2** | `grasp` | `(dx, dy, gripper)`，夹爪 ∈ [-1,1] | 3 | `configs/grasp.yaml` |
 | **课外** | LIBERO 等 | 3D / 真机 | — | 见升级路径 |
 
-仍 **无 Bullet**、**自动 collect + expert**。切换示例：
+仍 **无 Bullet**、**自动 collect + expert**。
+
+### 课堂固定流程表（config → 数据 → 权重）
+
+| 课次 | 配置文件 | `--collect` 数据目录 | 权重目录 | 启动时会打印 |
+|------|----------|----------------------|----------|----------------|
+| **L0 reach** | `configs/default.yaml` | `data/synthetic/` | `runs/default/` | `task=reach` `output_dim=2` |
+| **L1 push** | `configs/push.yaml` | `data/synthetic_push/` | `runs/push/` | `task=push` `output_dim=8` |
+| **L2 grasp** | `configs/grasp.yaml` | `data/synthetic_grasp/` | `runs/grasp/` | `task=grasp` `output_dim=3` |
+
+**不要混用**：用 push 的 config 却读 `runs/default/action_head.pt` 会直接报 **checkpoint 维度不匹配**。
+
+L1/L2 默认 **300 episodes、5 epochs**（`push.yaml` / `grasp.yaml`）；L0 仍为 120 / 3，便于快速试跑。
 
 ```cmd
-.\.venv\Scripts\python.exe -m vla_mini.dry_run --task reach
-.\.venv\Scripts\python.exe -m vla_mini.dry_run --task push
-.\.venv\Scripts\python.exe -m vla_mini.dry_run --task grasp
-
+REM 每一层：dry-run → collect+train → eval → demo（同一 config）
+.\.venv\Scripts\python.exe -m vla_mini.dry_run --config configs\push.yaml
 .\.venv\Scripts\python.exe -m vla_mini.train --config configs\push.yaml --collect
-.\.venv\Scripts\python.exe -m vla_mini.train --config configs\grasp.yaml --collect
-.\.venv\Scripts\python.exe -m vla_mini.demo --config configs\grasp.yaml --dry-run
+.\.venv\Scripts\python.exe -m vla_mini.eval --config configs\push.yaml
+set NO_PROXY=127.0.0.1,localhost
+.\.venv\Scripts\python.exe -m vla_mini.demo --config configs\push.yaml
 ```
+
+**自测（开发/CI）**：`pip install -e ".[dev]"` 后 `pytest -q`
 
 ---
 

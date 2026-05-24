@@ -7,14 +7,17 @@ from pathlib import Path
 
 import torch
 import yaml
-from PIL import Image
 
 from vla_mini.env import get_task_spec, make_env
-from vla_mini.model.action_exec import policy_vector_to_steps, rollout_predicted_actions
+from vla_mini.model.action_exec import rollout_predicted_actions
+from vla_mini.model.checkpoint import print_task_banner, validate_checkpoint
 from vla_mini.model.vla import MiniVLA, VLAConfig
+from vla_mini.train import vla_config_from_yaml
 
 
-def load_model(ckpt_path: Path, device: str) -> MiniVLA:
+def load_model(ckpt_path: Path, device: str, expected: VLAConfig | None = None) -> MiniVLA:
+    if expected is not None:
+        validate_checkpoint(ckpt_path, expected)
     payload = torch.load(ckpt_path, map_location=device, weights_only=False)
     cfg = VLAConfig(**payload["config"])
     model = MiniVLA(cfg).to(device)
@@ -29,8 +32,11 @@ def evaluate(
     seed: int = 100,
     device: str | None = None,
     task: str = "reach",
+    expected_cfg: VLAConfig | None = None,
 ) -> dict:
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    if expected_cfg is not None:
+        validate_checkpoint(ckpt_path, expected_cfg)
     model = load_model(ckpt_path, device)
     spec = get_task_spec(task)
     successes = 0
@@ -50,27 +56,6 @@ def evaluate(
     return {"success_rate": rate, "successes": successes, "episodes": episodes}
 
 
-def expert_step_once(env, spec) -> bool:
-    from vla_mini.env.action_utils import expert_action_chunk
-
-    if spec.action_chunk > 1:
-        flat = expert_action_chunk(env, spec.action_chunk)
-        steps = policy_vector_to_steps(flat, spec)
-    else:
-        steps = [env.expert_action()]
-    done = False
-    success = False
-    for action in steps:
-        result = env.step(action)
-        done = result.done
-        if result.info.get("success"):
-            success = True
-            break
-        if done:
-            break
-    return success
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
@@ -85,6 +70,16 @@ def main() -> None:
         cfg = yaml.safe_load(f)
 
     task = cfg.get("task", "reach")
+    model_cfg = vla_config_from_yaml(cfg)
+    ckpt = args.ckpt or Path(cfg["output_dir"]) / "action_head.pt"
+
+    print_task_banner(
+        model_cfg,
+        data_dir=cfg["data_dir"],
+        output_dir=cfg["output_dir"],
+        config_path=args.config,
+        ckpt_path=ckpt,
+    )
 
     if args.dry_run:
         from vla_mini.dry_run import expert_rollout
@@ -100,13 +95,13 @@ def main() -> None:
         )
         return
 
-    ckpt = args.ckpt or Path(cfg["output_dir"]) / "action_head.pt"
     evaluate(
         ckpt,
         episodes=cfg.get("eval_episodes", 50),
         seed=cfg.get("eval_seed", 100),
         device=cfg.get("device"),
         task=task,
+        expected_cfg=model_cfg,
     )
 
 

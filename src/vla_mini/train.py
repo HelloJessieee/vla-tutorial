@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 from vla_mini.data.synthetic import collect_episodes, load_manifest
 from vla_mini.env.tasks import get_task_spec
+from vla_mini.model.checkpoint import print_task_banner, validate_manifest_dim
 from vla_mini.model.vla import MiniVLA, VLAConfig
 
 
@@ -151,8 +152,19 @@ def main() -> None:
             )
         )
 
+    model_cfg = vla_config_from_yaml(cfg)
     data_dir = Path(cfg["data_dir"])
-    if args.collect or not (data_dir / "manifest.jsonl").exists():
+    output_dir = Path(cfg["output_dir"])
+    print_task_banner(
+        model_cfg,
+        data_dir=data_dir,
+        output_dir=output_dir,
+        config_path=args.config,
+        ckpt_path=output_dir / "action_head.pt",
+    )
+
+    manifest = data_dir / "manifest.jsonl"
+    if args.collect or not manifest.exists():
         print(f"collecting synthetic expert demos (task={task})...")
         collect_episodes(
             num_episodes=cfg.get("num_episodes", 200),
@@ -162,11 +174,13 @@ def main() -> None:
             action_chunk=cfg.get("action_chunk"),
         )
 
+    validate_manifest_dim(manifest, model_cfg)
+
     train_loop(
-        manifest=data_dir / "manifest.jsonl",
+        manifest=manifest,
         data_root=data_dir,
-        output_dir=Path(cfg["output_dir"]),
-        model_cfg=vla_config_from_yaml(cfg),
+        output_dir=output_dir,
+        model_cfg=model_cfg,
         epochs=cfg.get("epochs", 3),
         batch_size=cfg.get("batch_size", 8),
         lr=cfg.get("lr", 1e-3),
